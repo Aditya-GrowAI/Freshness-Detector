@@ -5,61 +5,7 @@ import { Upload, Camera, Scan } from 'lucide-react';
 import { CameraCapture } from './CameraCapture';
 import { FoodResults, type FreshessStatus } from './FoodResults';
 import { useToast } from '@/hooks/use-toast';
-
-// Simulated ML model results for demo
-const simulateMLAnalysis = (imageData: string): Promise<any> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Simulate different results based on some random factors
-      const outcomes: Array<{
-        status: FreshessStatus;
-        confidence: number;
-        foodType: string;
-        daysRemaining?: number;
-        tips: string[];
-      }> = [
-        {
-          status: 'fresh',
-          confidence: 0.92,
-          foodType: 'Apple',
-          daysRemaining: 7,
-          tips: [
-            'Store in refrigerator to extend freshness',
-            'Keep away from other fruits to prevent premature ripening',
-            'Check for soft spots daily',
-            'Best consumed within a week for optimal taste'
-          ]
-        },
-        {
-          status: 'expiring',
-          confidence: 0.78,
-          foodType: 'Banana',
-          daysRemaining: 2,
-          tips: [
-            'Consume within 1-2 days',
-            'Perfect for smoothies or banana bread',
-            'Store at room temperature',
-            'Brown spots indicate ripeness, still safe to eat'
-          ]
-        },
-        {
-          status: 'rotten',
-          confidence: 0.89,
-          foodType: 'Tomato',
-          tips: [
-            'Do not consume - shows signs of spoilage',
-            'Dispose of safely to prevent contamination',
-            'Check other produce for similar signs',
-            'Next time, store in cool, dry place'
-          ]
-        }
-      ];
-      
-      const randomResult = outcomes[Math.floor(Math.random() * outcomes.length)];
-      resolve(randomResult);
-    }, 2000); // Simulate processing time
-  });
-};
+import { analyzeFood } from '@/lib/aiModel';
 
 export const FoodScanner: React.FC = () => {
   const [showCamera, setShowCamera] = useState(false);
@@ -100,17 +46,18 @@ export const FoodScanner: React.FC = () => {
     setResult(null);
 
     try {
-      const analysisResult = await simulateMLAnalysis(imageData);
+      const analysisResult = await analyzeFood(imageData);
       setResult(analysisResult);
       
       toast({
         title: "Analysis Complete",
-        description: `Food status: ${analysisResult.status}`,
+        description: `${analysisResult.foodType} detected - ${analysisResult.status}`,
       });
     } catch (error) {
+      console.error('Food analysis error:', error);
       toast({
         title: "Analysis Failed",
-        description: "Please try again with a clearer image",
+        description: error instanceof Error ? error.message : "Please try again with a clearer image",
         variant: "destructive"
       });
     } finally {
@@ -146,7 +93,7 @@ export const FoodScanner: React.FC = () => {
               <div>
                 <h3 className="text-lg font-semibold">Analyzing Food...</h3>
                 <p className="text-sm text-muted-foreground">
-                  Our AI is checking the freshness
+                  AI model is processing your image
                 </p>
               </div>
               <div className="w-full bg-muted rounded-full h-2">
